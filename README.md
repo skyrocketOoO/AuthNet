@@ -2,6 +2,29 @@
 
 Authnet is a graph based auth service.
 
+## Comparison
+
+| Aspect | Tranditional(SQL) | Graph
+| :------ | :--: | :-----------: 
+| Data Model | Relational tables (e.g., users, roles, permissions) | Graph nodes and edges (e.g., users, roles, permissions as nodes, relationships as edges) 
+| Query Complexity | Joins and complex queries for relational data | Traversal queries for graph relationships
+| Relationship Handling | Foreign keys and JOINs | Relationships defined by edges in the graph
+| Scalability | May face scalability challenges with complex joins and large datasets | Can scale more easily for complex relationships and queries
+| Control | Depends on schema(e.g., RBAC, PBA) | Fine grained
+
+| Aspect | vertex based | edge based
+| :------ | :--: | :-----------: 
+| Data Model | Store both vertex and edge | Only store edge
+| Usage | Can store extra information on vertex | Only care about auth
+| Storage | V + E | E
+
+| Aspect | Directional | Bidirectional
+| :------ | :--: | :-----------: 
+| Data Model | Directional edge | Two graphs to store distinct direction
+| Usage | Hard to execute reverse query(e.g., who has auth to object) | Can do reverse query
+| Storage | E | 2E
+
+So, we use 
 
 ## Features
 

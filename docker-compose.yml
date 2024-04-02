@@ -1,0 +1,50 @@
+services:
+    postgres:
+        image: postgres:latest
+        environment:
+          POSTGRES_USER: zanzibar-dag
+          POSTGRES_PASSWORD: zanzibar-dag
+          POSTGRES_DB: zanzibar-dag
+        ports:
+          - "5432:5432"
+        volumes:
+          - postgres_data:/var/lib/postgresql/data
+
+    mongodb:
+      image: mongo:latest
+      container_name: mongodb
+      ports:
+        - "27017:27017"
+      volumes:
+        - mongodb_data:/data/db
+
+    zanzibar-dag:
+        image: zanzibar-dag:latest
+        ports:
+          - "8080:8080"
+        depends_on:
+          - postgres
+        environment:
+          POSTGRES_HOST: postgres
+          POSTGRES_PORT: 5432
+          POSTGRES_USER: zanzibar-dag
+          POSTGRES_PASSWORD: zanzibar-dag
+          POSTGRES_DB: zanzibar-dag
+          POSTGRES_TIMEZONE: Asia/Taipei
+
+    redis:
+      image: redis:latest
+      container_name: my-redis
+      restart: always
+      volumes:
+        - ./redis.conf:/usr/local/etc/redis/redis.conf
+        - redis_data:/data
+      ports:
+        - "6379:6379"
+
+volumes:
+  postgres_data:
+  mongodb_data:
+    driver: local
+  redis_data:
+    driver: local

@@ -1,0 +1,10 @@
+postgres:
+  host: localhost
+  port: 5432
+  user: zanzibar-dag
+  password: zanzibar-dag
+  db: zanzibar-dag
+  sslmode: disable
+  timezone: Asia/Taipei
+
+db: zanzibar-dag

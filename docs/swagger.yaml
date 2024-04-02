@@ -1,0 +1,38 @@
+definitions:
+  domain.Response:
+    properties:
+      message:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /healthy:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Response'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/domain.Response'
+      summary: Check the server healthy
+  /ping:
+    get:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/domain.Response'
+      summary: Check the server started
+swagger: "2.0"

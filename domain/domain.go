@@ -15,10 +15,10 @@ type Vertex struct {
 }
 
 type TreeNode struct {
-	Ns       string     `json:"ns"`
-	Name     string     `json:"name"`
-	Rel      string     `json:"rel"`
-	Children []TreeNode `json:"children"`
+	Ns       string      `json:"ns"`
+	Name     string      `json:"name"`
+	Rel      string      `json:"rel"`
+	Children []*TreeNode `json:"children"`
 }
 
 type PageOptions struct {

@@ -10,12 +10,12 @@ import (
 )
 
 type GraphInfra struct {
-	sqlRepo domain.DbRepository
+	dbRepo domain.DbRepository
 }
 
-func NewGraphInfra(sqlRepo domain.DbRepository) *GraphInfra {
+func NewGraphInfra(dbRepo domain.DbRepository) *GraphInfra {
 	return &GraphInfra{
-		sqlRepo: sqlRepo,
+		dbRepo: dbRepo,
 	}
 }
 
@@ -41,7 +41,7 @@ func (g *GraphInfra) Check(c context.Context, sbj domain.Vertex,
 				SbjName: vertex.Name,
 				SbjRel:  vertex.Rel,
 			}
-			edges, err := g.sqlRepo.Get(c, query, true)
+			edges, err := g.dbRepo.Get(c, query, true)
 			if err != nil {
 				return false, err
 			}
@@ -90,7 +90,7 @@ func (g *GraphInfra) GetPassedVertices(c context.Context, start domain.Vertex,
 					SbjName: vertex.Name,
 					SbjRel:  vertex.Rel,
 				}
-				qEdges, err := g.sqlRepo.Get(c, query, true)
+				qEdges, err := g.dbRepo.Get(c, query, true)
 				if err != nil {
 					return nil, err
 				}
@@ -137,7 +137,7 @@ func (g *GraphInfra) GetPassedVertices(c context.Context, start domain.Vertex,
 					ObjName: vertex.Name,
 					ObjRel:  vertex.Rel,
 				}
-				qEdges, err := g.sqlRepo.Get(c, query, true)
+				qEdges, err := g.dbRepo.Get(c, query, true)
 				if err != nil {
 					return nil, err
 				}
@@ -168,7 +168,56 @@ func (g *GraphInfra) GetPassedVertices(c context.Context, start domain.Vertex,
 	}
 }
 
-func (g *GraphInfra) GetTree(sbj domain.Vertex, maxDepth int) (
+func (g *GraphInfra) GetTree(c context.Context, sbj domain.Vertex, maxDepth int) (
 	*domain.TreeNode, error) {
-	return nil, domain.ErrNotImplemented{}
+	root := &domain.TreeNode{
+		Ns:       sbj.Ns,
+		Name:     sbj.Name,
+		Rel:      sbj.Rel,
+		Children: []*domain.TreeNode{},
+	}
+	visited := map[domain.Vertex]*domain.TreeNode{}
+	visited[sbj] = root
+	q := queue.NewQueue[*domain.TreeNode]()
+	q.Push(root)
+	for depth := 1; depth <= maxDepth && !q.IsEmpty(); depth++ {
+		for i := 0; i < q.Len(); i++ {
+			v, err := q.Pop()
+			if err != nil {
+				return nil, err
+			}
+			edges, err := g.dbRepo.Get(c,
+				domain.Edge{
+					SbjNs:   v.Ns,
+					SbjName: v.Name,
+					SbjRel:  v.Rel,
+				},
+				true,
+			)
+			if err != nil {
+				return nil, err
+			}
+			for _, edge := range edges {
+				obj := domain.Vertex{
+					Ns:   edge.ObjNs,
+					Name: edge.ObjName,
+					Rel:  edge.ObjRel,
+				}
+				if node, ok := visited[obj]; !ok {
+					newNode := &domain.TreeNode{
+						Ns:       obj.Ns,
+						Name:     obj.Name,
+						Rel:      obj.Rel,
+						Children: []*domain.TreeNode{},
+					}
+					q.Push(newNode)
+					visited[obj] = newNode
+					v.Children = append(v.Children, newNode)
+				} else {
+					v.Children = append(v.Children, node)
+				}
+			}
+		}
+	}
+	return root, nil
 }

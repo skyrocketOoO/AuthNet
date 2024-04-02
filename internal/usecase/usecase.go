@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"math"
 	"sync"
 
 	"github.com/skyrocketOoO/AuthNet/domain"
@@ -108,7 +109,10 @@ func (u *Usecase) GetSbjsWhoHasAuth(c context.Context, obj domain.Vertex,
 
 func (u *Usecase) GetTree(c context.Context, subject domain.Vertex, maxDepth int) (
 	*domain.TreeNode, error) {
-	return nil, domain.ErrNotImplemented{}
+	if maxDepth == 0 {
+		maxDepth = math.MaxInt
+	}
+	return u.graphInfra.GetTree(c, subject, maxDepth)
 }
 
 func (u *Usecase) SeeTree(c context.Context, subject domain.Vertex, maxDepth int) (

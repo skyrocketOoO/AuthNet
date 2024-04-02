@@ -1,6 +1,6 @@
 # Authnet
 
-Authnet is a graph based auth service.
+Authnet is a graph based auth service, which support graph's features but optimize for performance.
 
 ## Comparison
 
@@ -23,8 +23,6 @@ Authnet is a graph based auth service.
 | Data Model | Directional edge | Two graphs to store distinct direction
 | Usage | Hard to execute reverse query(e.g., who has auth to object) | Can do reverse query
 | Storage | E | 2E
-
-So, we use 
 
 ## Features
 
@@ -50,7 +48,7 @@ The `Relation` struct represents a relationship like edge in DAG between objects
 type Relation struct {
     ObjectNamespace  string
     ObjectName       string 
-    Relation         string 
+    ObjectRelation         string 
     SubjectNamespace string 
     SubjectName      string 
     SubjectRelation  string 

@@ -33,16 +33,12 @@ func (r *RedisRepository) Get(c context.Context, edge domain.Edge,
 			}
 			edges := []domain.Edge{}
 			for _, key := range keys {
-				res := r.client.SMembers(c, key)
-				if err := res.Err(); err != nil {
-					return nil, err
-				}
-				var tos []string
-				if err := res.ScanSlice(&tos); err != nil {
+				values, err := r.getValues(c, key)
+				if err != nil {
 					return nil, err
 				}
 				fromSplit := strings.Split(key, "%")
-				for _, to := range tos {
+				for _, to := range values {
 					toSplit := strings.Split(to, "%")
 					edges = append(edges, domain.Edge{
 						ObjNs:   toSplit[0],
@@ -56,29 +52,25 @@ func (r *RedisRepository) Get(c context.Context, edge domain.Edge,
 			}
 			return edges, nil
 		} else {
-			from, to := edgeToKeyValue(edge)
-			if to != "%%" {
-				to = vertexToPattern(domain.Vertex{
+			fromStr, toStr := edgeToKeyValue(edge)
+			if toStr != "%%" {
+				toPattern := vertexToPattern(domain.Vertex{
 					Ns:   edge.ObjNs,
 					Name: edge.ObjName,
 					Rel:  edge.ObjRel,
 				})
-				keys, err := r.getKeysFromPattern(c, "$"+to)
+				keys, err := r.getKeysFromPattern(c, "$"+toPattern)
 				if err != nil {
 					return nil, err
 				}
 				edges := []domain.Edge{}
 				for _, key := range keys {
-					res := r.client.SMembers(c, key)
-					if err := res.Err(); err != nil {
-						return nil, err
-					}
-					var tos []string
-					if err := res.ScanSlice(&tos); err != nil {
+					values, err := r.getValues(c, key)
+					if err != nil {
 						return nil, err
 					}
 					fromSplit := strings.Split(key, "%")
-					for _, to := range tos {
+					for _, to := range values {
 						toSplit := strings.Split(to, "%")
 						edges = append(edges, domain.Edge{
 							ObjNs:   toSplit[0],
@@ -92,17 +84,13 @@ func (r *RedisRepository) Get(c context.Context, edge domain.Edge,
 				}
 				return edges, nil
 			} else {
-				memberStrings := []string{}
-				stringSliceCmd := r.client.SMembers(c, from)
-				if stringSliceCmd.Err() != nil {
-					return nil, stringSliceCmd.Err()
-				}
-				if err := stringSliceCmd.ScanSlice(&memberStrings); err != nil {
+				values, err := r.getValues(c, fromStr)
+				if err != nil {
 					return nil, err
 				}
 				edges := []domain.Edge{}
-				for _, member := range memberStrings {
-					strSplit := strings.Split(member, "%")
+				for _, val := range values {
+					strSplit := strings.Split(val, "%")
 					edges = append(edges, domain.Edge{
 						ObjNs:   strSplit[0],
 						ObjName: strSplit[1],
@@ -155,12 +143,8 @@ func (r *RedisRepository) Delete(c context.Context, edge domain.Edge,
 			return err
 		}
 		for _, key := range keys {
-			res := r.client.SMembers(c, key)
-			if err := res.Err(); err != nil {
-				return err
-			}
-			values := []string{}
-			if err := res.ScanSlice(&values); err != nil {
+			values, err := r.getValues(c, key)
+			if err != nil {
 				return err
 			}
 			for _, val := range values {
@@ -247,4 +231,17 @@ func (r *RedisRepository) getKeysFromPattern(c context.Context,
 
 func addReverse(in string) string {
 	return "$" + in
+}
+
+func (r *RedisRepository) getValues(c context.Context, key string) (
+	[]string, error) {
+	res := r.client.SMembers(c, key)
+	if err := res.Err(); err != nil {
+		return nil, err
+	}
+	values := []string{}
+	if err := res.ScanSlice(&values); err != nil {
+		return nil, err
+	}
+	return values, nil
 }

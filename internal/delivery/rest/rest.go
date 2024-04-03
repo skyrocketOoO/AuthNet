@@ -363,6 +363,11 @@ func (h *Delivery) GetTree(c *gin.Context) {
 				Msg: err.Error(),
 			})
 			return
+		} else if _, ok := err.(domain.ErrRecordNotFound); ok {
+			c.JSON(http.StatusNotFound, domain.Response{
+				Msg: err.Error(),
+			})
+			return
 		}
 		c.JSON(http.StatusInternalServerError, domain.Response{
 			Msg: err.Error(),

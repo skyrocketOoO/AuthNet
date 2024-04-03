@@ -170,6 +170,18 @@ func (g *GraphInfra) GetPassedVertices(c context.Context, start domain.Vertex,
 
 func (g *GraphInfra) GetTree(c context.Context, sbj domain.Vertex, maxDepth int) (
 	*domain.TreeNode, error) {
+	if res, err := g.dbRepo.Get(
+		c,
+		domain.Edge{
+			SbjNs:   sbj.Ns,
+			SbjName: sbj.Name,
+			SbjRel:  sbj.Rel,
+		}, true); err != nil {
+		return nil, err
+	} else if len(res) == 0 {
+		return nil, domain.ErrRecordNotFound{}
+	}
+
 	root := &domain.TreeNode{
 		Ns:       sbj.Ns,
 		Name:     sbj.Name,

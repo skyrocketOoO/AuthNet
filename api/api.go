@@ -24,6 +24,6 @@ func Binding(r *gin.Engine, d *rest.Delivery) {
 		relRouter.POST("/obj-auths", d.GetObjAuths)
 		relRouter.POST("/sbj-who-has-auth", d.GetSbjsWhoHasAuth)
 		relRouter.POST("/get-tree", d.GetTree)
-		relRouter.POST("/see-tree", d.SeeTree)
+		relRouter.GET("/see-tree", d.SeeTree)
 	}
 }

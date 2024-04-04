@@ -2,6 +2,7 @@ package rest
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/skyrocketOoO/AuthNet/domain"
 
@@ -383,12 +384,24 @@ func (h *Delivery) GetTree(c *gin.Context) {
 }
 
 func (h *Delivery) SeeTree(c *gin.Context) {
-	type requestBody struct {
-		Sbj      domain.Vertex `json:"sbj" binding:"required"`
-		MaxDepth int           `json:"max_depth"`
+	// type requestBody struct {
+	// 	Sbj      domain.Vertex `json:"sbj" binding:"required"`
+	// 	MaxDepth int           `json:"max_depth"`
+	// }
+	// body := requestBody{}
+	// if err := c.ShouldBindJSON(&body); err != nil {
+	// 	c.JSON(http.StatusBadRequest, domain.Response{
+	// 		Msg: err.Error(),
+	// 	})
+	// 	return
+	// }
+	sbj := domain.Vertex{
+		Ns:   c.Query("ns"),
+		Name: c.Query("name"),
+		Rel:  c.Query("rel"),
 	}
-	body := requestBody{}
-	if err := c.ShouldBindJSON(&body); err != nil {
+	max_depth, err := strconv.Atoi(c.Query("max_depth"))
+	if err != nil {
 		c.JSON(http.StatusBadRequest, domain.Response{
 			Msg: err.Error(),
 		})
@@ -396,8 +409,8 @@ func (h *Delivery) SeeTree(c *gin.Context) {
 	}
 	graph, err := h.usecase.SeeTree(
 		c.Request.Context(),
-		body.Sbj,
-		body.MaxDepth,
+		sbj,
+		max_depth,
 	)
 	if err != nil {
 		if _, ok := err.(domain.ErrBodyAttribute); ok {

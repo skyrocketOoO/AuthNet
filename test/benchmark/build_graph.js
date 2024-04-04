@@ -6,7 +6,7 @@ export function BuildGraph(serverUrl, headers, layer, base){
     let res, payload;
     const namespace = "role", relation = "parent";
     
-    res = http.post(`${relationUrl}/clear-all-relations`, null, {headers:headers});
+    res = http.del(`${relationUrl}/all`, null, {headers:headers});
     check(res, { 'ClearAllRelations': (r) => r.status == 200 });
 
     let curLayer = 1;
@@ -15,12 +15,14 @@ export function BuildGraph(serverUrl, headers, layer, base){
 
         for (let i = 0; i < count; i++){
             payload = {
-                object_namespace: namespace,
-                object_name: curLayer.toString() + "_" + i.toString(),
-                relation: relation,
-                subject_namespace: namespace,
-                subject_name: (curLayer-1).toString() + "_" + Math.floor(i / base).toString(),
-                subject_relation: relation,
+                edge:{
+                    obj_ns: namespace,
+                    obj_name: curLayer.toString() + "_" + i.toString(),
+                    obj_rel: relation,
+                    sbj_ns: namespace,
+                    sbj_name: (curLayer-1).toString() + "_" + Math.floor(i / base).toString(),
+                    sbj_rel: relation,
+                }
             };
             res = http.post(`${relationUrl}`, JSON.stringify(payload), {headers: headers});
             check(res, { 'Create: status == 200': (r) => r.status == 200 });

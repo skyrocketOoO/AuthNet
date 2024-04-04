@@ -9,15 +9,15 @@ export function Check(serverUrl, headers, layer, base){
     const end = (layer).toString() + "_" + (Math.pow(base, layer)-1).toString();
 
     payload = {
-        object: {
-            namespace: namespace,
+        sbj: {
+            ns: namespace,
             name: start,
-            relation: relation,
+            rel: relation,
         },
-        subject: {
-            namespace: namespace,
+        obj: {
+            ns: namespace,
             name: end,
-            relation: relation,
+            rel: relation,
         },
     };
     res = http.post(`${relationUrl}/check`, JSON.stringify(payload), {

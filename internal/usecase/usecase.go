@@ -5,6 +5,7 @@ import (
 	"math"
 	"sync"
 
+	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/skyrocketOoO/AuthNet/domain"
 	"github.com/skyrocketOoO/AuthNet/utils"
 )
@@ -107,15 +108,18 @@ func (u *Usecase) GetSbjsWhoHasAuth(c context.Context, obj domain.Vertex,
 		collectCond, maxDepth)
 }
 
-func (u *Usecase) GetTree(c context.Context, subject domain.Vertex, maxDepth int) (
+func (u *Usecase) GetTree(c context.Context, sbj domain.Vertex, maxDepth int) (
 	*domain.TreeNode, error) {
 	if maxDepth == 0 {
 		maxDepth = math.MaxInt
 	}
-	return u.graphInfra.GetTree(c, subject, maxDepth)
+	return u.graphInfra.GetTree(c, sbj, maxDepth)
 }
 
-func (u *Usecase) SeeTree(c context.Context, subject domain.Vertex, maxDepth int) (
-	string, error) {
-	return "", domain.ErrNotImplemented{}
+func (u *Usecase) SeeTree(c context.Context, sbj domain.Vertex, maxDepth int) (
+	*charts.Tree, error) {
+	if maxDepth == 0 {
+		maxDepth = math.MaxInt
+	}
+	return u.graphInfra.SeeTree(c, sbj, maxDepth)
 }

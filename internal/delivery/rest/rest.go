@@ -383,7 +383,39 @@ func (h *Delivery) GetTree(c *gin.Context) {
 }
 
 func (h *Delivery) SeeTree(c *gin.Context) {
-	c.JSON(http.StatusBadRequest, domain.Response{
-		Msg: "Not Implemented",
-	})
+	type requestBody struct {
+		Sbj      domain.Vertex `json:"sbj" binding:"required"`
+		MaxDepth int           `json:"max_depth"`
+	}
+	body := requestBody{}
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.JSON(http.StatusBadRequest, domain.Response{
+			Msg: err.Error(),
+		})
+		return
+	}
+	graph, err := h.usecase.SeeTree(
+		c.Request.Context(),
+		body.Sbj,
+		body.MaxDepth,
+	)
+	if err != nil {
+		if _, ok := err.(domain.ErrBodyAttribute); ok {
+			c.JSON(http.StatusBadRequest, domain.Response{
+				Msg: err.Error(),
+			})
+			return
+		} else if _, ok := err.(domain.ErrRecordNotFound); ok {
+			c.JSON(http.StatusNotFound, domain.Response{
+				Msg: err.Error(),
+			})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, domain.Response{
+			Msg: err.Error(),
+		})
+		return
+	}
+
+	graph.Render(c.Writer)
 }

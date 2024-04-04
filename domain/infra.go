@@ -1,6 +1,10 @@
 package domain
 
-import "context"
+import (
+	"context"
+
+	"github.com/go-echarts/go-echarts/v2/charts"
+)
 
 type DbRepository interface {
 	Ping(c context.Context) error
@@ -16,7 +20,8 @@ type GraphInfra interface {
 	GetPassedVertices(c context.Context, start Vertex, isSbj bool,
 		searchCond SearchCond, collectCond CollectCond, maxDepth int) (
 		vertices []Vertex, err error)
-	GetTree(c context.Context, subject Vertex, maxDepth int) (*TreeNode, error)
-	// GetShortestPath(subject Vertex, object Vertex, searchCond SearchCond) ([]Edge, error)
-	// GetAllPaths(subject Vertex, object Vertex, searchCond SearchCond) ([][]Edge, error)
+	GetTree(c context.Context, sbj Vertex, maxDepth int) (*TreeNode, error)
+	// GetShortestPath(sbj Vertex, object Vertex, searchCond SearchCond) ([]Edge, error)
+	// GetAllPaths(sbj Vertex, object Vertex, searchCond SearchCond) ([][]Edge, error)
+	SeeTree(c context.Context, sbj Vertex, maxDepth int) (*charts.Tree, error)
 }

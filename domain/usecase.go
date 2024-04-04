@@ -1,6 +1,10 @@
 package domain
 
-import "context"
+import (
+	"context"
+
+	"github.com/go-echarts/go-echarts/v2/charts"
+)
 
 type Usecase interface {
 	Healthy(ctx context.Context) error
@@ -21,6 +25,6 @@ type Usecase interface {
 		collectCond CollectCond, maxDepth int) (
 		vertices []Vertex, err error)
 	GetTree(c context.Context, subject Vertex, maxDepth int) (*TreeNode, error)
-	SeeTree(c context.Context, sbj Vertex, maxDepth int) (imageAddress string,
-		err error)
+	SeeTree(c context.Context, sbj Vertex, maxDepth int) (*charts.Tree,
+		error)
 }

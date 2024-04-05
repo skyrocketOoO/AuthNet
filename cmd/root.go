@@ -27,9 +27,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// Here is the enum flag variable declaration
-var flagDatabase DatabaseEnum
-
 func workFunc(cmd *cobra.Command, args []string) {
 	zerolog.TimeFieldFormat = time.RFC3339
 	// human-friendly logging without efficiency
@@ -47,9 +44,13 @@ func workFunc(cmd *cobra.Command, args []string) {
 	docs.SwaggerInfo.Schemes = []string{"http"}
 
 	var dbRepo domain.DbRepository
-	switch string(flagDatabase) {
-	case "sqlite", "pg":
-		sqlDb, disconnectDb, err := sql.InitDB(string(flagDatabase))
+	mode, err := cmd.Flags().GetInt("mode")
+	if err != nil {
+		log.Fatal().Msg(errors.ToString(err, true))
+	}
+	switch mode {
+	case 1:
+		sqlDb, disconnectDb, err := sql.InitDB("pg")
 		if err != nil {
 			log.Fatal().Msg(errors.ToString(err, true))
 		}
@@ -58,7 +59,7 @@ func workFunc(cmd *cobra.Command, args []string) {
 		if err != nil {
 			log.Fatal().Msg(err.Error())
 		}
-	case "mongo":
+	case 2:
 		mongoClient, disconnectDb, err := mongo.InitDb()
 		if err != nil {
 			log.Fatal().Msg(errors.ToString(err, true))
@@ -68,7 +69,7 @@ func workFunc(cmd *cobra.Command, args []string) {
 		if err != nil {
 			log.Fatal().Msg(err.Error())
 		}
-	case "redis":
+	case 3:
 		rdsCli, disconnectDb, err := redis.InitDb()
 		if err != nil {
 			log.Fatal().Msg(err.Error())
@@ -78,15 +79,7 @@ func workFunc(cmd *cobra.Command, args []string) {
 		if err != nil {
 			log.Fatal().Msg(err.Error())
 		}
-	default:
-		log.Fatal().Msg("database not supported")
-	}
-
-	mode, err := cmd.Flags().GetInt("mode")
-	if err != nil {
-		log.Fatal().Msg(err.Error())
-	}
-	if mode == 4 {
+	case 4:
 		rdsCli, disconnectDb, err := redis.InitDb()
 		if err != nil {
 			log.Fatal().Msg(err.Error())
@@ -96,6 +89,8 @@ func workFunc(cmd *cobra.Command, args []string) {
 		if err != nil {
 			log.Fatal().Msg(err.Error())
 		}
+	default:
+		log.Fatal().Msg("mode not supported")
 	}
 
 	graphInfra := graph.NewGraphInfra(dbRepo)
@@ -132,7 +127,5 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 	rootCmd.Flags().StringP("port", "p", "8080", "port")
-	rootCmd.Flags().Var(&flagDatabase, "database",
-		`database enum. allowed: "pg", "sqlite", "mongo", "redis"`)
 	rootCmd.Flags().IntP("mode", "m", 1, "mode")
 }

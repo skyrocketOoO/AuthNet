@@ -10,22 +10,15 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
-var (
-	db         string
-	collection string = "edges"
-)
-
-func init() {
-	db = viper.GetString("db")
-}
-
 type MongoRepository struct {
-	client *mongo.Client
+	client    *mongo.Client
+	colClient *mongo.Collection
 }
 
 func NewMongoRepository(client *mongo.Client) (*MongoRepository, error) {
 	return &MongoRepository{
-		client: client,
+		client:    client,
+		colClient: client.Database(viper.GetString("db")).Collection("edges"),
 	}, nil
 }
 
@@ -35,11 +28,10 @@ func (r *MongoRepository) Ping(c context.Context) error {
 
 func (r *MongoRepository) Get(c context.Context, edge domain.Edge,
 	queryMode bool) ([]domain.Edge, error) {
-	col := r.client.Database(viper.GetString(db)).Collection(collection)
 	edges := []domain.Edge{}
 	if queryMode {
 		if edge == (domain.Edge{}) {
-			cursor, err := col.Find(c, bson.D{})
+			cursor, err := r.colClient.Find(c, bson.D{})
 			if err != nil {
 				return nil, err
 			}
@@ -48,7 +40,7 @@ func (r *MongoRepository) Get(c context.Context, edge domain.Edge,
 				return nil, err
 			}
 		} else {
-			cursor, err := col.Find(c, edgeToBSONDWithoutZeroVal(edge))
+			cursor, err := r.colClient.Find(c, edgeToBSONDWithoutZeroVal(edge))
 			if err != nil {
 				return nil, err
 			}
@@ -58,7 +50,7 @@ func (r *MongoRepository) Get(c context.Context, edge domain.Edge,
 			}
 		}
 	} else {
-		cursor, err := col.Find(c, edge)
+		cursor, err := r.colClient.Find(c, edge)
 		if err != nil {
 			return nil, err
 		}
@@ -76,9 +68,7 @@ func (r *MongoRepository) Get(c context.Context, edge domain.Edge,
 }
 
 func (r *MongoRepository) Create(c context.Context, edge domain.Edge) error {
-	col := r.client.Database(viper.GetString(db)).Collection(collection)
-	col.Indexes().CreateOne(c, mongo.IndexModel{})
-	_, err := col.InsertOne(
+	_, err := r.colClient.InsertOne(
 		c,
 		edge,
 	)
@@ -87,22 +77,20 @@ func (r *MongoRepository) Create(c context.Context, edge domain.Edge) error {
 
 func (r *MongoRepository) Delete(c context.Context, edge domain.Edge,
 	queryMode bool) error {
-	col := r.client.Database(viper.GetString(db)).Collection(collection)
 	if queryMode {
-		_, err := col.DeleteMany(c, edgeToBSONDWithoutZeroVal(edge))
+		_, err := r.colClient.DeleteMany(c, edgeToBSONDWithoutZeroVal(edge))
 		return err
 	} else {
 		if _, err := r.Get(c, edge, false); err != nil {
 			return err
 		}
-		_, err := col.DeleteOne(c, edge)
+		_, err := r.colClient.DeleteOne(c, edge)
 		return err
 	}
 }
 
 func (r *MongoRepository) ClearAll(c context.Context) error {
-	col := r.client.Database(viper.GetString(db)).Collection(collection)
-	_, err := col.DeleteMany(c, bson.M{})
+	_, err := r.colClient.DeleteMany(c, bson.M{})
 	return err
 }
 

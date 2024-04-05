@@ -10,6 +10,15 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 )
 
+var (
+	db         string
+	collection string = "edges"
+)
+
+func init() {
+	db = viper.GetString("db")
+}
+
 type MongoRepository struct {
 	client *mongo.Client
 }
@@ -26,64 +35,48 @@ func (r *MongoRepository) Ping(c context.Context) error {
 
 func (r *MongoRepository) Get(c context.Context, edge domain.Edge,
 	queryMode bool) ([]domain.Edge, error) {
+	col := r.client.Database(viper.GetString(db)).Collection(collection)
 	edges := []domain.Edge{}
 	if queryMode {
 		if edge == (domain.Edge{}) {
-			col := r.client.Database(viper.GetString("db")).Collection("edges")
 			cursor, err := col.Find(c, bson.D{})
 			if err != nil {
 				return nil, err
 			}
 			defer cursor.Close(c)
-			for cursor.Next(c) {
-				var edge domain.Edge
-				if err := cursor.Decode(&edge); err != nil {
-					return nil, err
-				}
-				edges = append(edges, edge)
+			if err := cursor.All(c, &edges); err != nil {
+				return nil, err
 			}
-			return edges, nil
 		} else {
-			col := r.client.Database(viper.GetString("db")).Collection("edges")
 			cursor, err := col.Find(c, edgeToBSONDWithoutZeroVal(edge))
 			if err != nil {
 				return nil, err
 			}
 			defer cursor.Close(c)
-			for cursor.Next(c) {
-				var edge domain.Edge
-				if err := cursor.Decode(&edge); err != nil {
-					return nil, err
-				}
-				edges = append(edges, edge)
+			if err := cursor.All(c, &edges); err != nil {
+				return nil, err
 			}
-			return edges, nil
 		}
 	} else {
-		col := r.client.Database(viper.GetString("db")).Collection("edges")
 		cursor, err := col.Find(c, edge)
 		if err != nil {
 			return nil, err
 		}
 		defer cursor.Close(c)
-		for cursor.Next(c) {
-			var edge domain.Edge
-			if err := cursor.Decode(&edge); err != nil {
-				return nil, err
-			}
-			edges = append(edges, edge)
+		if err := cursor.All(c, &edges); err != nil {
+			return nil, err
 		}
 		if len(edges) == 0 {
 			return nil, domain.ErrRecordNotFound{}
 		} else if len(edges) > 1 {
 			return nil, domain.ErrDuplicateRecord{}
 		}
-		return edges, nil
 	}
+	return edges, nil
 }
 
 func (r *MongoRepository) Create(c context.Context, edge domain.Edge) error {
-	col := r.client.Database(viper.GetString("db")).Collection("edges")
+	col := r.client.Database(viper.GetString(db)).Collection(collection)
 	col.Indexes().CreateOne(c, mongo.IndexModel{})
 	_, err := col.InsertOne(
 		c,
@@ -94,7 +87,7 @@ func (r *MongoRepository) Create(c context.Context, edge domain.Edge) error {
 
 func (r *MongoRepository) Delete(c context.Context, edge domain.Edge,
 	queryMode bool) error {
-	col := r.client.Database(viper.GetString("db")).Collection("edges")
+	col := r.client.Database(viper.GetString(db)).Collection(collection)
 	if queryMode {
 		_, err := col.DeleteMany(c, edgeToBSONDWithoutZeroVal(edge))
 		return err
@@ -108,7 +101,7 @@ func (r *MongoRepository) Delete(c context.Context, edge domain.Edge,
 }
 
 func (r *MongoRepository) ClearAll(c context.Context) error {
-	col := r.client.Database(viper.GetString("db")).Collection("edges")
+	col := r.client.Database(viper.GetString(db)).Collection(collection)
 	_, err := col.DeleteMany(c, bson.M{})
 	return err
 }

@@ -6,28 +6,30 @@ import (
 	"strings"
 
 	"github.com/redis/go-redis/v9"
+	"github.com/rs/zerolog/log"
 	"github.com/skyrocketOoO/AuthNet/domain"
 )
 
-type RedisRepository struct {
+type Redis2Repository struct {
 	client *redis.Client
 }
 
-func NewRedisRepository(client *redis.Client) (*RedisRepository, error) {
-	return &RedisRepository{
+func NewRedis2Repository(client *redis.Client) (*Redis2Repository, error) {
+	log.Info().Msg("initialize redis2Repository")
+	return &Redis2Repository{
 		client: client,
 	}, nil
 }
 
-func (r *RedisRepository) Ping(c context.Context) error {
+func (r *Redis2Repository) Ping(c context.Context) error {
 	return r.client.Ping(c).Err()
 }
 
-func (r *RedisRepository) Get(c context.Context, edge domain.Edge,
+func (r *Redis2Repository) Get(c context.Context, edge domain.Edge,
 	queryMode bool) ([]domain.Edge, error) {
 	if queryMode {
 		if edge == (domain.Edge{}) {
-			keys, err := r.getKeysFromPattern(c, "[^$]*")
+			keys, err := r.getKeysFromPattern(c, "*")
 			if err != nil {
 				return nil, err
 			}
@@ -54,35 +56,7 @@ func (r *RedisRepository) Get(c context.Context, edge domain.Edge,
 		} else {
 			fromStr, toStr := edgeToKeyValue(edge)
 			if toStr != "%%" {
-				toPattern := vertexToPattern(domain.Vertex{
-					Ns:   edge.ObjNs,
-					Name: edge.ObjName,
-					Rel:  edge.ObjRel,
-				})
-				keys, err := r.getKeysFromPattern(c, "$"+toPattern)
-				if err != nil {
-					return nil, err
-				}
-				edges := []domain.Edge{}
-				for _, key := range keys {
-					values, err := r.getValues(c, key)
-					if err != nil {
-						return nil, err
-					}
-					fromSplit := strings.Split(key, "%")
-					for _, to := range values {
-						toSplit := strings.Split(to, "%")
-						edges = append(edges, domain.Edge{
-							ObjNs:   toSplit[0],
-							ObjName: toSplit[1],
-							ObjRel:  toSplit[2],
-							SbjNs:   fromSplit[0],
-							SbjName: fromSplit[1],
-							SbjRel:  fromSplit[2],
-						})
-					}
-				}
-				return edges, nil
+				return nil, domain.ErrNotImplemented{}
 			} else {
 				values, err := r.getValues(c, fromStr)
 				if err != nil {
@@ -117,15 +91,12 @@ func (r *RedisRepository) Get(c context.Context, edge domain.Edge,
 	}
 }
 
-func (r *RedisRepository) Create(c context.Context, edge domain.Edge) error {
+func (r *Redis2Repository) Create(c context.Context, edge domain.Edge) error {
 	from, to := edgeToKeyValue(edge)
-	if err := r.client.SAdd(c, from, to).Err(); err != nil {
-		return err
-	}
-	return r.client.SAdd(c, addReverse(to), from).Err()
+	return r.client.SAdd(c, from, to).Err()
 }
 
-func (r *RedisRepository) Delete(c context.Context, edge domain.Edge,
+func (r *Redis2Repository) Delete(c context.Context, edge domain.Edge,
 	queryMode bool) error {
 	if queryMode {
 		fromP := vertexToPattern(domain.Vertex{
@@ -153,8 +124,9 @@ func (r *RedisRepository) Delete(c context.Context, edge domain.Edge,
 					return err
 				}
 				if match {
-					r.client.SRem(c, key, val)
-					r.client.SRem(c, addReverse(val), key)
+					if err := r.client.SRem(c, key, val).Err(); err != nil {
+						return err
+					}
 				}
 			}
 		}
@@ -163,19 +135,16 @@ func (r *RedisRepository) Delete(c context.Context, edge domain.Edge,
 			return err
 		}
 		from, to := edgeToKeyValue(edge)
-		if err := r.client.SRem(c, addReverse(to), from).Err(); err != nil {
-			return err
-		}
 		return r.client.SRem(c, from, to).Err()
 	}
 	return nil
 }
 
-func (r *RedisRepository) ClearAll(c context.Context) error {
+func (r *Redis2Repository) ClearAll(c context.Context) error {
 	return r.client.FlushDB(c).Err()
 }
 
-func (r *RedisRepository) getKeysFromPattern(c context.Context,
+func (r *Redis2Repository) getKeysFromPattern(c context.Context,
 	pattern string) ([]string, error) {
 
 	result := r.client.Keys(c, pattern)
@@ -189,11 +158,7 @@ func (r *RedisRepository) getKeysFromPattern(c context.Context,
 	return keys, nil
 }
 
-func addReverse(in string) string {
-	return "$" + in
-}
-
-func (r *RedisRepository) getValues(c context.Context, key string) (
+func (r *Redis2Repository) getValues(c context.Context, key string) (
 	[]string, error) {
 	res := r.client.SMembers(c, key)
 	if err := res.Err(); err != nil {

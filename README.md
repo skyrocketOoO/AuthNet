@@ -1,6 +1,12 @@
 # Authnet
 
-Authnet is a graph based auth service, which support graph's features but optimize for performance.
+Authnet is a graph based auth service, focus on restricted features mode to provide more performance.
+
+We support the following modes(use --mode flag):
+1. postgres
+2. mongo
+3. redis with api.sbj-who-has-auth(use bidirectional dag)
+4. redis with slow api.sbj-who-has-auth
 
 ## Comparison
 

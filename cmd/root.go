@@ -82,6 +82,22 @@ func workFunc(cmd *cobra.Command, args []string) {
 		log.Fatal().Msg("database not supported")
 	}
 
+	mode, err := cmd.Flags().GetInt("mode")
+	if err != nil {
+		log.Fatal().Msg(err.Error())
+	}
+	if mode == 4 {
+		rdsCli, disconnectDb, err := redis.InitDb()
+		if err != nil {
+			log.Fatal().Msg(err.Error())
+		}
+		defer disconnectDb()
+		dbRepo, err = redis.NewRedis2Repository(rdsCli)
+		if err != nil {
+			log.Fatal().Msg(err.Error())
+		}
+	}
+
 	graphInfra := graph.NewGraphInfra(dbRepo)
 	usecase := usecase.NewUsecase(dbRepo, graphInfra)
 	delivery := rest.NewDelivery(usecase)
@@ -118,4 +134,5 @@ func init() {
 	rootCmd.Flags().StringP("port", "p", "8080", "port")
 	rootCmd.Flags().Var(&flagDatabase, "database",
 		`database enum. allowed: "pg", "sqlite", "mongo", "redis"`)
+	rootCmd.Flags().IntP("mode", "m", 1, "mode")
 }

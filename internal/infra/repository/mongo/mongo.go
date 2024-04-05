@@ -84,6 +84,7 @@ func (r *MongoRepository) Get(c context.Context, edge domain.Edge,
 
 func (r *MongoRepository) Create(c context.Context, edge domain.Edge) error {
 	col := r.client.Database(viper.GetString("db")).Collection("edges")
+	col.Indexes().CreateOne(c, mongo.IndexModel{})
 	_, err := col.InsertOne(
 		c,
 		edge,

@@ -11,8 +11,8 @@ import (
 func InitDb() (*redis.Client, func(), error) {
 	rdsCli := redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
+		Password: "",
+		DB:       0, // use default DB
 	})
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)

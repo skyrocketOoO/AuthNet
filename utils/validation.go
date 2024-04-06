@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"fmt"
 	"reflect"
 	"strings"
 
@@ -9,7 +8,6 @@ import (
 )
 
 func ValidateRel(rel domain.Edge) error {
-	fmt.Printf("%+v\n", rel)
 	if rel.ObjNs == "" || rel.ObjName == "" || rel.ObjRel == "" ||
 		rel.SbjNs == "" || rel.SbjName == "" {
 		return domain.ErrBodyAttribute{}

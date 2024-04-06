@@ -21,7 +21,6 @@ func InitDb() (*mongo.Client, func(), error) {
 	}
 
 	collection := client.Database("zanzibar-dag").Collection("edges")
-	// Create indexes
 	_, err = collection.Indexes().CreateMany(context.TODO(), []mongo.IndexModel{
 		{
 			Keys:    bson.D{{Key: "obj_ns", Value: 1}, {Key: "obj_name", Value: 1}, {Key: "obj_rel", Value: 1}},

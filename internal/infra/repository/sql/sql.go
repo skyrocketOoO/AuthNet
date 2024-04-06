@@ -2,7 +2,6 @@ package sql
 
 import (
 	"context"
-	"strings"
 
 	errors "github.com/rotisserie/eris"
 	"github.com/skyrocketOoO/AuthNet/domain"
@@ -34,7 +33,7 @@ func (r *SqlRepository) Ping(c context.Context) error {
 func (r *SqlRepository) Get(c context.Context, edge domain.Edge,
 	queryMode bool) ([]domain.Edge, error) {
 	if queryMode {
-		var sqlEdges []Edge
+		sqlEdges := []domain.Edge{}
 		if edge == (domain.Edge{}) {
 			if err := r.db.WithContext(c).Find(&sqlEdges).Error; err != nil {
 				return nil, errors.New(err.Error())
@@ -45,18 +44,22 @@ func (r *SqlRepository) Get(c context.Context, edge domain.Edge,
 				return nil, errors.New(err.Error())
 			}
 		}
-		edges := make([]domain.Edge, len(sqlEdges))
-		for i, sqlEdge := range sqlEdges {
-			edges[i] = convertToRel(sqlEdge)
-		}
-		return edges, nil
+		return sqlEdges, nil
 	} else {
-		var sqlEdge Edge
-		if err := r.db.WithContext(c).Where("all_columns = ?",
-			concatAttr(edge)).Take(&sqlEdge).Error; err != nil {
+		sqlEdge := domain.Edge{}
+		if err := r.db.WithContext(c).Where(
+			map[string]interface{}{
+				"obj_ns":   edge.ObjNs,
+				"obj_name": edge.ObjName,
+				"obj_rel":  edge.ObjRel,
+				"sbj_ns":   edge.SbjNs,
+				"sbj_name": edge.SbjName,
+				"sbj_rel":  edge.SbjRel,
+			},
+		).Take(&sqlEdge).Error; err != nil {
 			return nil, errors.New(err.Error())
 		}
-		return []domain.Edge{convertToRel(sqlEdge)}, nil
+		return []domain.Edge{sqlEdge}, nil
 	}
 }
 
@@ -79,8 +82,16 @@ func (r *SqlRepository) Delete(c context.Context, edge domain.Edge,
 		if _, err := r.Get(c, edge, false); err != nil {
 			return err
 		}
-		if err := r.db.Where("all_columns = ?", concatAttr(edge)).
-			Delete(&Edge{}).Error; err != nil {
+		if err := r.db.Where(
+			map[string]interface{}{
+				"obj_ns":   edge.ObjNs,
+				"obj_name": edge.ObjName,
+				"obj_rel":  edge.ObjRel,
+				"sbj_ns":   edge.SbjNs,
+				"sbj_name": edge.SbjName,
+				"sbj_rel":  edge.SbjRel,
+			},
+		).Delete(&Edge{}).Error; err != nil {
 			return errors.New(err.Error())
 		}
 	}
@@ -152,32 +163,6 @@ func (r *SqlRepository) ClearAll(c context.Context) error {
 
 func convertToSqlModel(edge domain.Edge) Edge {
 	return Edge{
-		ObjNs:      edge.ObjNs,
-		ObjName:    edge.ObjName,
-		ObjRel:     edge.ObjRel,
-		SbjNs:      edge.SbjNs,
-		SbjName:    edge.SbjName,
-		SbjRel:     edge.SbjRel,
-		AllColumns: concatAttr(edge),
-	}
-}
-
-func concatAttr(edge domain.Edge) string {
-	return strings.Join(
-		[]string{
-			edge.ObjNs,
-			edge.ObjName,
-			edge.ObjRel,
-			edge.SbjNs,
-			edge.SbjName,
-			edge.SbjRel,
-		},
-		"%",
-	)
-}
-
-func convertToRel(edge Edge) domain.Edge {
-	return domain.Edge{
 		ObjNs:   edge.ObjNs,
 		ObjName: edge.ObjName,
 		ObjRel:  edge.ObjRel,

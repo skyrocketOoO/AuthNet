@@ -1,12 +1,11 @@
 package sql
 
 type Edge struct {
-	ID         uint   `gorm:"primarykey"`
-	AllColumns string `gorm:"index"`
-	ObjNs      string `gorm:"index:object"`
-	ObjName    string `gorm:"index:object"`
-	ObjRel     string `gorm:"index:object"`
-	SbjNs      string `gorm:"index:subject"`
-	SbjName    string `gorm:"index:subject"`
-	SbjRel     string `gorm:"index:subject"`
+	ID      uint   `gorm:"primarykey"`
+	ObjNs   string `gorm:"index:obj"`
+	ObjName string `gorm:"index:obj"`
+	ObjRel  string `gorm:"index:obj"`
+	SbjNs   string `gorm:"index:sbj"`
+	SbjName string `gorm:"index:sbj"`
+	SbjRel  string `gorm:"index:sbj"`
 }

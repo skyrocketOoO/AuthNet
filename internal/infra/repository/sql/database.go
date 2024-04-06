@@ -31,6 +31,7 @@ func InitDB(database string) (*gorm.DB, func(), error) {
 		db, err = gorm.Open(
 			postgres.Open(connStr), &gorm.Config{
 				Logger: nil,
+				// Logger: logger.Default.LogMode(logger.Info),
 			},
 		)
 	case "sqlite":

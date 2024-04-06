@@ -64,8 +64,7 @@ func (r *SqlRepository) Get(c context.Context, edge domain.Edge,
 }
 
 func (r *SqlRepository) Create(c context.Context, edge domain.Edge) error {
-	sqlRel := convertToSqlModel(edge)
-	if err := r.db.WithContext(c).Create(&sqlRel).Error; err != nil {
+	if err := r.db.WithContext(c).Create(&edge).Error; err != nil {
 		return errors.New(err.Error())
 	}
 	return nil
@@ -159,15 +158,4 @@ func (r *SqlRepository) ClearAll(c context.Context) error {
 		return err
 	}
 	return nil
-}
-
-func convertToSqlModel(edge domain.Edge) Edge {
-	return Edge{
-		ObjNs:   edge.ObjNs,
-		ObjName: edge.ObjName,
-		ObjRel:  edge.ObjRel,
-		SbjNs:   edge.SbjNs,
-		SbjName: edge.SbjName,
-		SbjRel:  edge.SbjRel,
-	}
 }

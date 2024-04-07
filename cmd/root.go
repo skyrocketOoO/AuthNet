@@ -89,6 +89,16 @@ func workFunc(cmd *cobra.Command, args []string) {
 		if err != nil {
 			log.Fatal().Msg(err.Error())
 		}
+	case 5:
+		sqlDb, disconnectDb, err := sql.InitDB("cockroachdb")
+		if err != nil {
+			log.Fatal().Msg(errors.ToString(err, true))
+		}
+		defer disconnectDb()
+		dbRepo, err = sql.NewSqlRepository(sqlDb)
+		if err != nil {
+			log.Fatal().Msg(err.Error())
+		}
 	default:
 		log.Fatal().Msg("mode not supported")
 	}
@@ -126,6 +136,6 @@ func init() {
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
-	rootCmd.Flags().StringP("port", "p", "8080", "port")
+	rootCmd.Flags().StringP("port", "p", "8081", "port")
 	rootCmd.Flags().IntP("mode", "m", 1, "mode")
 }

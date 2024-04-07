@@ -37,6 +37,10 @@ func InitDB(database string) (*gorm.DB, func(), error) {
 	case "sqlite":
 		log.Info().Msg("Connecting to Sqlite")
 		db, err = gorm.Open(sqlite.Open("sqlite.db"), &gorm.Config{})
+	case "cockroachdb":
+		log.Info().Msg("Connecting to cockroachdb")
+		dsn := "postgresql://root:roach@localhost:26257"
+		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	default:
 		return nil, nil, errors.New("database not supported")
 	}

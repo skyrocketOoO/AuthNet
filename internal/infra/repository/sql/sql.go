@@ -154,8 +154,7 @@ func (r *SqlRepository) Delete(c context.Context, edge domain.Edge,
 
 func (r *SqlRepository) ClearAll(c context.Context) error {
 	query := "DELETE FROM edges"
-	if err := r.db.WithContext(c).Exec(query).Error; err != nil {
-		return err
-	}
-	return nil
+	return r.db.WithContext(c).Exec(query).Error
+	// return r.db.Session(&gorm.Session{AllowGlobalUpdate: true}).
+	// Delete(&Edge{}).Error
 }

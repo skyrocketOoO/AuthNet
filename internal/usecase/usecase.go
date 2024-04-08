@@ -123,3 +123,8 @@ func (u *Usecase) SeeTree(c context.Context, sbj domain.Vertex, maxDepth int) (
 	}
 	return u.graphInfra.SeeTree(c, sbj, maxDepth)
 }
+
+func (u *Usecase) Batch(c context.Context,
+	operations []domain.Operation) error {
+	return domain.ErrNotImplemented{}
+}

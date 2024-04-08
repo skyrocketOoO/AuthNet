@@ -27,4 +27,6 @@ type Usecase interface {
 	GetTree(c context.Context, subject Vertex, maxDepth int) (*TreeNode, error)
 	SeeTree(c context.Context, sbj Vertex, maxDepth int) (*charts.Tree,
 		error)
+
+	Batch(c context.Context, operations []Operation) error
 }

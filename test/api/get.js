@@ -35,7 +35,7 @@ export function TestGetAPI(relationUrl, headers){
     }});
 
     resp = http.get(relationUrl +
-                    "?obj_name=" + edge["obj_name"] +
+                    "?sbj_name=" + edge["sbj_name"] +
                     "&query_mode=true",
                     null, {headers:headers});
 

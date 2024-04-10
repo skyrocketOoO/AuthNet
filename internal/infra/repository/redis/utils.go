@@ -1,6 +1,10 @@
 package redis
 
-import "github.com/skyrocketOoO/AuthNet/domain"
+import (
+	"strings"
+
+	"github.com/skyrocketOoO/AuthNet/domain"
+)
 
 func vertexToPattern(vertex domain.Vertex) string {
 	if vertex == (domain.Vertex{}) {
@@ -43,4 +47,16 @@ func edgeToKeyValue(edge domain.Edge) (from string, to string) {
 		Rel:  edge.ObjRel,
 	})
 	return
+}
+
+func stringToVertex(str string) (domain.Vertex, error) {
+	v := domain.Vertex{}
+	parts := strings.Split(str, "%")
+	if len(parts) != 3 {
+		return v, domain.ErrBodyAttribute{}
+	}
+	v.Ns = parts[0]
+	v.Name = parts[1]
+	v.Rel = parts[2]
+	return v, nil
 }

@@ -12,7 +12,7 @@ export default function() {
   const Headers = {
     'Content-Type': 'application/json',
   }
-  const layer = 6, base = 5;
+  const layer = 6, base = 6;
 
   let res = http.del(`${SERVER_URL}/relation/all`, null, {headers:Headers});
   check(res, { 'ClearAllRelations: status == 200': (r) => r.status == 200 });

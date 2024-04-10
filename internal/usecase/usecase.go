@@ -45,17 +45,27 @@ func (u *Usecase) Create(c context.Context, edge domain.Edge) error {
 	if err := utils.ValidateRel(edge); err != nil {
 		return err
 	}
+	edges, err := u.sqlRepo.Get(c, edge, false)
+	if err != nil {
+		if err, ok := err.(domain.ErrDuplicateRecord); ok {
+			return err
+		}
+	}
+	if len(edges) > 0 {
+		return domain.ErrDuplicateRecord{}
+	}
+
 	ok, err := u.graphInfra.Check(
 		c,
-		domain.Vertex{
-			Ns:   edge.SbjNs,
-			Name: edge.SbjName,
-			Rel:  edge.SbjRel,
-		},
 		domain.Vertex{
 			Ns:   edge.ObjNs,
 			Name: edge.ObjName,
 			Rel:  edge.ObjRel,
+		},
+		domain.Vertex{
+			Ns:   edge.SbjNs,
+			Name: edge.SbjName,
+			Rel:  edge.SbjRel,
 		},
 		domain.SearchCond{},
 	)

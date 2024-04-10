@@ -119,6 +119,10 @@ func (h *Delivery) Create(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, domain.Response{
 				Msg: err.Error(),
 			})
+		} else if _, ok := err.(domain.ErrDuplicateRecord); ok {
+			c.JSON(http.StatusBadRequest, domain.Response{
+				Msg: err.Error(),
+			})
 		} else {
 			c.JSON(http.StatusInternalServerError, domain.Response{
 				Msg: err.Error(),

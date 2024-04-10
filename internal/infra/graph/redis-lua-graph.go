@@ -5,66 +5,60 @@ import (
 
 	"github.com/go-echarts/go-echarts/v2/charts"
 	"github.com/go-echarts/go-echarts/v2/opts"
+	"github.com/redis/go-redis/v9"
 	"github.com/skyrocketOoO/AuthNet/domain"
 	"github.com/skyrocketOoO/AuthNet/utils"
 	"github.com/skyrocketOoO/go-utility/queue"
 	"github.com/skyrocketOoO/go-utility/set"
 )
 
-type GraphInfra struct {
+type RedisLuaGraphInfra struct {
 	dbRepo domain.DbRepository
+	rdsCli *redis.Client
 }
 
-func NewGraphInfra(dbRepo domain.DbRepository) *GraphInfra {
-	return &GraphInfra{
+func NewRedisLuaGraphInfra(dbRepo domain.DbRepository,
+	rdsCli *redis.Client) *RedisLuaGraphInfra {
+	return &RedisLuaGraphInfra{
 		dbRepo: dbRepo,
+		rdsCli: rdsCli,
 	}
 }
 
-func (g *GraphInfra) Check(c context.Context, sbj domain.Vertex,
+func (g *RedisLuaGraphInfra) Check(c context.Context, sbj domain.Vertex,
 	obj domain.Vertex, searchCond domain.SearchCond) (bool, error) {
-	visited := set.NewSet[domain.Vertex]()
-	q := queue.NewQueue[domain.Vertex]()
-	visited.Add(sbj)
-	q.Push(sbj)
-
-	for !q.IsEmpty() {
-		qLen := q.Len()
-		for i := 0; i < qLen; i++ {
-			vertex, _ := q.Pop()
-			query := domain.Edge{
-				SbjNs:   vertex.Ns,
-				SbjName: vertex.Name,
-				SbjRel:  vertex.Rel,
-			}
-			edges, err := g.dbRepo.Get(c, query, true)
-			if err != nil {
-				return false, err
-			}
-
-			for _, edge := range edges {
-				if edge.ObjNs == obj.Ns && edge.ObjName == obj.Name &&
-					edge.ObjRel == obj.Rel {
-					return true, nil
-				}
-				child := domain.Vertex{
-					Ns:   edge.ObjNs,
-					Name: edge.ObjName,
-					Rel:  edge.ObjRel,
-				}
-				if !searchCond.ShouldStop(child) &&
-					!visited.Exist(child) {
-					visited.Add(child)
-					q.Push(child)
-				}
-			}
-		}
+	result := g.rdsCli.Eval(c, `
+		local function bfs(start, target)
+			local queue = {start}
+			local visited = {}
+			while #queue > 0 do
+				local current = table.remove(queue, 1)
+				if not visited[current] then
+					visited[current] = true
+					local members = redis.call('SMEMBERS', current)
+					for _, member in ipairs(members) do
+						if member == target then
+							return 1
+						else
+							table.insert(queue, member)
+						end
+					end
+				end
+			end
+			return 0
+		end
+		return bfs(KEYS[1], KEYS[2])
+	`, []string{vertexTostring(sbj), vertexTostring(obj)})
+	if err := result.Err(); err != nil {
+		return false, err
 	}
-
+	if result.Val().(int64) == 1 {
+		return true, nil
+	}
 	return false, nil
 }
 
-func (g *GraphInfra) GetPassedVertices(c context.Context, start domain.Vertex,
+func (g *RedisLuaGraphInfra) GetPassedVertices(c context.Context, start domain.Vertex,
 	isSbj bool, searchCond domain.SearchCond, collectCond domain.CollectCond,
 	maxDepth int) ([]domain.Vertex, error) {
 	if isSbj {
@@ -115,56 +109,11 @@ func (g *GraphInfra) GetPassedVertices(c context.Context, start domain.Vertex,
 
 		return verticesSet.ToSlice(), nil
 	} else {
-		if err := utils.ValidateVertex(start, false); err != nil {
-			return nil, err
-		}
-		depth := 0
-		verticesSet := set.NewSet[domain.Vertex]()
-		visited := set.NewSet[domain.Vertex]()
-		q := queue.NewQueue[domain.Vertex]()
-		visited.Add(start)
-		q.Push(start)
-		for !q.IsEmpty() {
-			qLen := q.Len()
-			for i := 0; i < qLen; i++ {
-				vertex, _ := q.Pop()
-				query := domain.Edge{
-					ObjNs:   vertex.Ns,
-					ObjName: vertex.Name,
-					ObjRel:  vertex.Rel,
-				}
-				qEdges, err := g.dbRepo.Get(c, query, true)
-				if err != nil {
-					return nil, err
-				}
-
-				for _, edge := range qEdges {
-					parent := domain.Vertex{
-						Ns:   edge.SbjNs,
-						Name: edge.SbjName,
-						Rel:  edge.SbjRel,
-					}
-					if collectCond.ShouldCollect(parent) {
-						verticesSet.Add(parent)
-					}
-					if !searchCond.ShouldStop(parent) &&
-						!visited.Exist(parent) {
-						visited.Add(parent)
-						q.Push(parent)
-					}
-				}
-			}
-			depth++
-			if depth >= maxDepth {
-				break
-			}
-		}
-
-		return verticesSet.ToSlice(), nil
+		return nil, domain.ErrNotImplemented{}
 	}
 }
 
-func (g *GraphInfra) GetTree(c context.Context, sbj domain.Vertex, maxDepth int) (
+func (g *RedisLuaGraphInfra) GetTree(c context.Context, sbj domain.Vertex, maxDepth int) (
 	*domain.TreeNode, error) {
 	if res, err := g.dbRepo.Get(
 		c,
@@ -230,7 +179,7 @@ func (g *GraphInfra) GetTree(c context.Context, sbj domain.Vertex, maxDepth int)
 	return root, nil
 }
 
-func (g *GraphInfra) SeeTree(c context.Context, sbj domain.Vertex, maxDepth int) (
+func (g *RedisLuaGraphInfra) SeeTree(c context.Context, sbj domain.Vertex, maxDepth int) (
 	*charts.Tree, error) {
 	if res, err := g.dbRepo.Get(
 		c,
@@ -318,8 +267,4 @@ func (g *GraphInfra) SeeTree(c context.Context, sbj domain.Vertex, maxDepth int)
 
 	return graph, nil
 
-}
-
-func vertexTostring(v domain.Vertex) string {
-	return v.Ns + "%" + v.Name + "%" + v.Rel
 }

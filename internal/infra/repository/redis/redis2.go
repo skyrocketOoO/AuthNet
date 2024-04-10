@@ -54,25 +54,42 @@ func (r *Redis2Repository) Get(c context.Context, edge domain.Edge,
 			}
 			return edges, nil
 		} else {
-			fromStr, toStr := edgeToKeyValue(edge)
+			_, toStr := edgeToKeyValue(edge)
 			if toStr != "%%" {
 				return nil, domain.ErrNotImplemented{}
 			} else {
-				values, err := r.getValues(c, fromStr)
+				fromPattern := vertexToPattern(
+					domain.Vertex{
+						Ns:   edge.SbjNs,
+						Name: edge.SbjName,
+						Rel:  edge.SbjRel,
+					},
+				)
+				keys, err := r.getKeysFromPattern(c, fromPattern)
 				if err != nil {
 					return nil, err
 				}
 				edges := []domain.Edge{}
-				for _, val := range values {
-					strSplit := strings.Split(val, "%")
-					edges = append(edges, domain.Edge{
-						ObjNs:   strSplit[0],
-						ObjName: strSplit[1],
-						ObjRel:  strSplit[2],
-						SbjNs:   edge.SbjNs,
-						SbjName: edge.SbjName,
-						SbjRel:  edge.SbjRel,
-					})
+				for _, key := range keys {
+					v, err := stringToVertex(key)
+					if err != nil {
+						return nil, err
+					}
+					values, err := r.getValues(c, key)
+					if err != nil {
+						return nil, err
+					}
+					for _, val := range values {
+						strSplit := strings.Split(val, "%")
+						edges = append(edges, domain.Edge{
+							ObjNs:   strSplit[0],
+							ObjName: strSplit[1],
+							ObjRel:  strSplit[2],
+							SbjNs:   v.Ns,
+							SbjName: v.Name,
+							SbjRel:  v.Rel,
+						})
+					}
 				}
 				return edges, nil
 			}
@@ -170,27 +187,3 @@ func (r *Redis2Repository) getValues(c context.Context, key string) (
 	}
 	return values, nil
 }
-
-var test string = `
-	local function bfs(start, target)
-		local queue = {start}
-		local visited = {}
-
-		while #queue > 0 do
-			local current = table.remove(queue, 1)
-			if not visited[current] then
-				visited[current] = true
-				local members = redis.call('SMEMBERS', current)
-				for _, member in ipairs(members) do
-					if member == target then
-						return true
-					else
-						table.insert(queue, member)
-					end
-				end
-			end
-		end
-
-		return false
-	end
-`

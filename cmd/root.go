@@ -99,11 +99,29 @@ func workFunc(cmd *cobra.Command, args []string) {
 		if err != nil {
 			log.Fatal().Msg(err.Error())
 		}
+	case 6:
+
 	default:
 		log.Fatal().Msg("mode not supported")
 	}
 
-	graphInfra := graph.NewGraphInfra(dbRepo)
+	var graphInfra domain.GraphInfra
+	switch mode {
+	case 6:
+		rdsCli, disconnectDb, err := redis.InitDb()
+		if err != nil {
+			log.Fatal().Msg(err.Error())
+		}
+		defer disconnectDb()
+		dbRepo, err = redis.NewRedis2Repository(rdsCli)
+		if err != nil {
+			log.Fatal().Msg(err.Error())
+		}
+		graphInfra = graph.NewRedisLuaGraphInfra(dbRepo, rdsCli)
+	default:
+		graphInfra = graph.NewGraphInfra(dbRepo)
+	}
+
 	usecase := usecase.NewUsecase(dbRepo, graphInfra)
 	delivery := rest.NewDelivery(usecase)
 

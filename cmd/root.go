@@ -15,7 +15,6 @@ import (
 	"github.com/skyrocketOoO/AuthNet/internal/delivery/rest/middleware"
 	"github.com/skyrocketOoO/AuthNet/internal/infra/graph"
 	"github.com/skyrocketOoO/AuthNet/internal/infra/repository/mongo"
-	"github.com/skyrocketOoO/AuthNet/internal/infra/repository/mongo2"
 	"github.com/skyrocketOoO/AuthNet/internal/infra/repository/redis"
 	"github.com/skyrocketOoO/AuthNet/internal/infra/repository/sql"
 	"github.com/skyrocketOoO/AuthNet/internal/usecase"
@@ -102,16 +101,6 @@ func workFunc(cmd *cobra.Command, args []string) {
 		}
 	case 6:
 
-	case 7:
-		mongoClient, disconnectDb, err := mongo2.InitDb()
-		if err != nil {
-			log.Fatal().Msg(errors.ToString(err, true))
-		}
-		defer disconnectDb()
-		dbRepo, err = mongo2.NewMongoRepository(mongoClient)
-		if err != nil {
-			log.Fatal().Msg(err.Error())
-		}
 	default:
 		log.Fatal().Msg("mode not supported")
 	}
